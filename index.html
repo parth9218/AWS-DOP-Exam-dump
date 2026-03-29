@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Prep Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="floating-header">
+            <div class="floating-stats">
+                <span id="attempted-count">0</span> Attempted
+            </div>
+        </header>
+
+        <div class="page-title">
+            <span class="logo-icon">📚</span>
+            <h1>Exam Prep Pro</h1>
+        </div>
+
+        <main class="main-content">
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search questions...">
+            </div>
+            <div id="questions-container" class="questions-list">
+                <!-- Questions will be dynamically injected here -->
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <p>Good luck on your exam!</p>
+        </footer>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
