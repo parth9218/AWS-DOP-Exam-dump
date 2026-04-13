@@ -1,3 +1,105 @@
+/* =============================================
+   THEME MANAGEMENT  (three-state: system / dark / light)
+   ─────────────────────────────────────────────
+   States stored in localStorage under STORAGE_KEY:
+     null / absent  → "system" mode (auto-follows OS)
+     "dark"         → forced dark
+     "light"        → forced light
+
+   Toggle cycle:  system → dark → light → system …
+   Icon:          🖥  (system) │ ☀️ (dark override) │ 🌙 (light override)
+   ============================================= */
+(function () {
+    const STORAGE_KEY = 'examPrepTheme';
+    const html = document.documentElement;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+    /** Returns the resolved visual theme ('dark' | 'light'). */
+    function resolvedTheme() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === 'dark' || stored === 'light') return stored;
+        return mq.matches ? 'dark' : 'light';   // follow system
+    }
+
+    /** Returns the stored preference key (null = system mode). */
+    function storedPref() {
+        return localStorage.getItem(STORAGE_KEY); // 'dark' | 'light' | null
+    }
+
+    /** Apply a resolved theme to the DOM and update the toggle icon. */
+    function applyTheme(theme, animate) {
+        if (animate) {
+            html.classList.add('theme-transitioning');
+            setTimeout(() => html.classList.remove('theme-transitioning'), 400);
+        }
+        html.setAttribute('data-theme', theme);
+        syncIcon();
+    }
+
+    /** Update the toggle button icon to reflect current state. */
+    function syncIcon() {
+        const icon = document.getElementById('theme-toggle-icon');
+        if (!icon) return;
+        const pref = storedPref();
+        if (pref === 'dark')  icon.textContent = '☀️';  // forced dark → offer switch to light
+        else if (pref === 'light') icon.textContent = '🌙'; // forced light → offer switch to system
+        else icon.textContent = '🖥';                    // system mode → offer switch to dark
+    }
+
+    /** Update tooltip/aria-label to reflect next action. */
+    function syncLabel(btn) {
+        if (!btn) return;
+        const pref = storedPref();
+        if (pref === 'dark')  btn.setAttribute('title', 'Switch to light mode');
+        else if (pref === 'light') btn.setAttribute('title', 'Use system theme');
+        else btn.setAttribute('title', 'Switch to dark mode');
+    }
+
+    // ── Initial paint (runs before DOMContentLoaded to prevent FOUC) ──
+    applyTheme(resolvedTheme(), false);
+
+    // ── System preference change listener ──
+    // Always fires; only overrides the CSS when NOT in forced manual mode.
+    mq.addEventListener('change', (e) => {
+        if (storedPref() === null) {
+            // Follow the system change
+            applyTheme(e.matches ? 'dark' : 'light', true);
+        }
+        // When forced, we still update the icon in case the indicator is relevant
+        syncIcon();
+    });
+
+    // ── Wire toggle button once DOM is ready ──
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('theme-toggle-btn');
+        syncIcon();
+        syncLabel(btn);
+
+        if (!btn) return;
+
+        btn.addEventListener('click', () => {
+            const pref = storedPref();
+
+            if (pref === null) {
+                // system → force dark
+                localStorage.setItem(STORAGE_KEY, 'dark');
+                applyTheme('dark', true);
+            } else if (pref === 'dark') {
+                // dark → force light
+                localStorage.setItem(STORAGE_KEY, 'light');
+                applyTheme('light', true);
+            } else {
+                // light → back to system
+                localStorage.removeItem(STORAGE_KEY);
+                applyTheme(resolvedTheme(), true);  // pick up current OS preference
+            }
+
+            syncLabel(btn);
+        });
+    });
+})();
+
+
 document.addEventListener('DOMContentLoaded', () => {
     let allQuestions = [];
     const questionsContainer = document.getElementById('questions-container');
