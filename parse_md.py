@@ -48,9 +48,9 @@ def parse_md(filepath):
             'link': link
         })
         
-    with open('/Users/parth/.gemini/antigravity/scratch/questions.json', 'w', encoding='utf-8') as f:
+    with open('questions1.json', 'w', encoding='utf-8') as f:
         json.dump(questions, f, indent=2)
         
     print(f"Parsed {len(questions)} questions.")
 
-parse_md('/Users/parth/Downloads/examtopics_output.md')
+parse_md('/Users/parth/Downloads/AWS-DOP.md')
