@@ -198,10 +198,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const titleColor = isAttempted ? 'var(--success-color)' : '';
             const statusIcon = isAttempted ? '✅ ' : '';
             
+            const canonicalNumber = parseInt(q.id, 10) + 1;
+            const canonicalTag = `<span class="meta-tag">${canonicalNumber}</span>`;
+            
             card.innerHTML = `
                 <div class="question-header">
                     <div class="question-title" style="color: ${titleColor}">${statusIcon}${escapeHTML(q.title)}</div>
                     <div class="question-meta">
+                        ${canonicalTag}
                         ${q.timestamp ? `<span class="meta-tag">🕘 ${escapeHTML(q.timestamp.split(' ')[0])}</span>` : ''}
                     </div>
                 </div>
