@@ -1,0 +1,52 @@
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), 0 0 40px rgba(248,81,73,0.15);
+  border-radius: var(--r-xl);
+  padding: 2.25rem;
+  max-width: 420px; width: 100%;
+  text-align: center;
+}
+[data-theme="light"] .modal { background: rgba(255,255,255,0.92); }
+
+.iconWrap {
+  font-size: 2.5rem; margin-bottom: 1rem;
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) 0.2s both;
+}
+@keyframes shake {
+  10%,90%{ transform: rotate(-2deg); }
+  20%,80%{ transform: rotate(3deg); }
+  30%,50%,70%{ transform: rotate(-4deg); }
+  40%,60%{ transform: rotate(4deg); }
+}
+
+.heading { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.7rem; }
+.desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+.desc strong { color: var(--danger); }
+
+.actions {
+  display: flex; gap: 0.75rem; justify-content: center;
+  margin-top: 1.75rem;
+}
+.btn {
+  padding: 0.6rem 1.4rem; border-radius: var(--r-md);
+  font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; border: 1.5px solid transparent;
+  transition: all var(--t-base); font-family: inherit;
+}
+.btnDanger { background: var(--danger); color: #fff; }
+.btnDanger:hover { background: #c53030; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(248,81,73,0.35); }
+.btnGhost { background: transparent; border-color: var(--border); color: var(--text-secondary); }
+.btnGhost:hover { border-color: var(--border-hover); color: var(--text-primary); background: var(--bg-elevated); }

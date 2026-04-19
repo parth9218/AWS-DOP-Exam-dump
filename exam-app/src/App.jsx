@@ -1,0 +1,273 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+
+import LoadingScreen     from './components/LoadingScreen';
+import HomePage          from './components/HomePage';
+import BrowsePage        from './components/BrowsePage';
+import ExamHeader        from './components/ExamHeader';
+import QuestionNavigator from './components/QuestionNavigator';
+import QuestionCard      from './components/QuestionCard';
+import ExamFooter        from './components/ExamFooter';
+import SummaryModal      from './components/SummaryModal';
+import ConfirmModal      from './components/ConfirmModal';
+
+import { useExamState }  from './hooks/useExamState';
+import { useTimer }      from './hooks/useTimer';
+import { useTheme }      from './hooks/useTheme';
+
+import styles from './App.module.css';
+
+/* ── Views ── */
+const VIEW_HOME  = 'home';
+const VIEW_BROWSE = 'browse';
+const VIEW_EXAM  = 'exam';
+
+export default function App() {
+  /* ── View / routing ── */
+  const [view, setView]           = useState(VIEW_HOME);
+  const [prevView, setPrevView]   = useState(null);
+
+  /* ── Exam questions ── */
+  const [questions, setQuestions] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState(null);
+
+  /* ── Full bank question count (for home page display) ── */
+  const [fullCount, setFullCount]   = useState(0);
+
+  /* ── Exam modals & state ── */
+  const [showSummary,  setShowSummary]  = useState(false);
+  const [showConfirm,  setShowConfirm]  = useState(false);
+  const [clockVisible, setClockVisible] = useState(
+    () => localStorage.getItem('mockExam_clockVisible') !== 'false'
+  );
+  const [direction, setDirection] = useState(1);
+
+  const { theme, cycle: cycleTheme, icon: themeIcon, title: themeTitle } = useTheme();
+  const { elapsed } = useTimer();
+  const exam = useExamState(questions);
+
+  /* ── Load exam questions (75-question subset) ── */
+  useEffect(() => {
+    fetch('/questions.json')
+      .then(r => r.json())
+      .then(data => {
+        const valid = data.filter(q => q && q.title && q.body);
+        setQuestions(valid);
+        setLoading(false);
+      })
+      .catch(err => { setLoadError(err.message); setLoading(false); });
+  }, []);
+
+  /* ── Load full bank count for home page ── */
+  useEffect(() => {
+    fetch('/questions-full.json')
+      .then(r => r.json())
+      .then(data => setFullCount(data.filter(q => q?.title && q?.body).length))
+      .catch(() => {});
+  }, []);
+
+  /* ── Navigation helpers ── */
+  const goTo = useCallback((idx) => {
+    setDirection(idx > exam.currentIdx ? 1 : -1);
+    exam.goTo(idx);
+  }, [exam]);
+  const goNext = useCallback(() => { setDirection(1); exam.goNext(); }, [exam]);
+  const goPrev = useCallback(() => { setDirection(-1); exam.goPrev(); }, [exam]);
+
+  /* ── Clock ── */
+  const toggleClock = useCallback(() => {
+    setClockVisible(v => {
+      const next = !v;
+      localStorage.setItem('mockExam_clockVisible', next ? 'true' : 'false');
+      return next;
+    });
+  }, []);
+
+  /* ── New exam flow ── */
+  const requestNewExam = useCallback(() => setShowConfirm(true), []);
+  const cancelNewExam  = useCallback(() => setShowConfirm(false), []);
+  const doNewExam = useCallback(() => {
+    setShowConfirm(false); setShowSummary(false);
+    exam.clearExam(); setDirection(1);
+  }, [exam]);
+
+  /* ── Keyboard shortcuts (exam mode only) ── */
+  useEffect(() => {
+    if (view !== VIEW_EXAM) return;
+    function onKey(e) {
+      if (showSummary || showConfirm) return;
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goNext();
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goPrev();
+      else if (e.key === 'f' || e.key === 'F') exam.toggleFlag(exam.currentIdx);
+      else if (e.key === 'Escape') { setShowSummary(false); setShowConfirm(false); }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view, showSummary, showConfirm, goNext, goPrev, exam]);
+
+  const answeredCount = Object.keys(exam.answers).filter(k => exam.answers[k]?.length > 0).length;
+
+  const onSelect = useCallback((key, checked, maxSelect, isSingle) => {
+    exam.selectAnswer(exam.currentIdx, key, checked, maxSelect, isSingle);
+  }, [exam]);
+
+  const navigateTo = (nextView) => {
+    setPrevView(view);
+    setView(nextView);
+  };
+
+  /* ── Global back nav bar (shown in browse/exam to return home) ── */
+  const GlobalNav = ({ currentView }) => (
+    <nav className={styles.globalNav}>
+      <button
+        className={styles.navHome}
+        onClick={() => navigateTo(VIEW_HOME)}
+        title="Back to hub"
+      >
+        ☁️ <span>AWS DOP-C02</span>
+      </button>
+      <div className={styles.navTabs}>
+        <button
+          className={`${styles.navTab} ${currentView === VIEW_BROWSE ? styles.navTabActive : ''}`}
+          onClick={() => navigateTo(VIEW_BROWSE)}
+        >
+          📚 Browse
+        </button>
+        <button
+          className={`${styles.navTab} ${currentView === VIEW_EXAM ? styles.navTabActive : ''}`}
+          onClick={() => navigateTo(VIEW_EXAM)}
+        >
+          🎓 Exam
+        </button>
+      </div>
+      <button className={styles.themeBtn} onClick={cycleTheme} title={themeTitle}>
+        {themeIcon}
+      </button>
+    </nav>
+  );
+
+  /* ── Initial loading ── */
+  if (loading) return <LoadingScreen />;
+
+  /* ── Home ── */
+  if (view === VIEW_HOME) {
+    return (
+      <div className={styles.shell}>
+        <div className={styles.homeThemeBtn}>
+          <button className={styles.themeBtn} onClick={cycleTheme} title={themeTitle}>{themeIcon}</button>
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ flex: 1 }}>
+            <HomePage
+              questionCount={fullCount}
+              onBrowse={() => navigateTo(VIEW_BROWSE)}
+              onExam={() => navigateTo(VIEW_EXAM)}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  /* ── Browse ── */
+  if (view === VIEW_BROWSE) {
+    return (
+      <div className={styles.shell}>
+        <GlobalNav currentView={VIEW_BROWSE} />
+        <AnimatePresence mode="wait">
+          <motion.div key="browse" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ flex: 1 }}>
+            <BrowsePage />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  /* ── Exam ── */
+  if (loadError) {
+    return (
+      <div className={styles.shell}>
+        <GlobalNav currentView={VIEW_EXAM} />
+        <div className={styles.errorScreen}>
+          <p>⚠️ {loadError}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+            Run <code>node scripts/generate-test.js</code> to generate the exam question set.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const q = questions[exam.currentIdx];
+
+  return (
+    <div className={styles.shell}>
+      <ExamHeader
+        currentIdx={exam.currentIdx}
+        totalCount={questions.length}
+        elapsed={elapsed}
+        clockVisible={clockVisible}
+        onToggleClock={toggleClock}
+        theme={theme}
+        onCycleTheme={cycleTheme}
+        themeIcon={themeIcon}
+        themeTitle={themeTitle}
+        onNewExam={requestNewExam}
+        onSummary={() => setShowSummary(true)}
+        answeredCount={answeredCount}
+        onHome={() => navigateTo(VIEW_HOME)}
+      />
+
+      <QuestionNavigator
+        questions={questions}
+        answers={exam.answers}
+        flagged={exam.flagged}
+        currentIdx={exam.currentIdx}
+        onGoTo={goTo}
+      />
+
+      {q && (
+        <QuestionCard
+          key={exam.currentIdx}
+          question={q}
+          questionIdx={exam.currentIdx}
+          totalCount={questions.length}
+          userSel={exam.answers[exam.currentIdx] || []}
+          direction={direction}
+          onSelect={onSelect}
+        />
+      )}
+
+      <ExamFooter
+        currentIdx={exam.currentIdx}
+        totalCount={questions.length}
+        flagged={exam.flagged}
+        onPrev={goPrev}
+        onNext={goNext}
+        onFlag={() => exam.toggleFlag(exam.currentIdx)}
+        onSummary={() => setShowSummary(true)}
+      />
+
+      <AnimatePresence>
+        {showSummary && (
+          <SummaryModal
+            key="summary"
+            questions={questions}
+            answers={exam.answers}
+            flagged={exam.flagged}
+            onClose={() => setShowSummary(false)}
+            onNewExam={requestNewExam}
+            onGoTo={goTo}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showConfirm && (
+          <ConfirmModal key="confirm" onConfirm={doNewExam} onCancel={cancelNewExam} />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

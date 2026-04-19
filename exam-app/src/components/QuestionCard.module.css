@@ -1,0 +1,80 @@
+.area {
+  flex: 1; padding: 1.5rem;
+  display: flex; justify-content: center; align-items: flex-start;
+  overflow-y: auto; overflow-x: hidden;
+}
+
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--r-xl);
+  padding: 2rem 2.25rem;
+  max-width: 860px; width: 100%;
+  will-change: transform, opacity;
+}
+
+[data-theme="light"] .card {
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+}
+
+.metaRow {
+  display: flex; align-items: center; gap: 0.65rem;
+  margin-bottom: 1.4rem; flex-wrap: wrap;
+}
+
+.numBadge {
+  background: linear-gradient(135deg, #ff9900, #e68a00);
+  color: #000; font-weight: 800; font-size: 0.8rem;
+  padding: 3px 14px; border-radius: var(--r-full);
+  box-shadow: 0 2px 8px rgba(255,153,0,0.3);
+}
+
+.typeBadge {
+  font-size: 0.76rem; font-weight: 600;
+  padding: 3px 12px; border-radius: var(--r-full);
+  border: 1px solid;
+}
+
+.selectHint {
+  margin-left: auto;
+  font-size: 0.75rem; color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+
+.body {
+  font-size: 1rem; line-height: 1.8;
+  color: var(--text-primary);
+  white-space: pre-wrap; word-break: break-word;
+  margin-bottom: 1.75rem;
+}
+.body :global(strong) { color: var(--aws); font-weight: 700; }
+.body :global(br) { display: block; content: ''; margin: 0.2rem 0; }
+
+.options {
+  display: flex; flex-direction: column; gap: 0.55rem;
+  margin-bottom: 1.25rem;
+}
+
+.kbHint {
+  display: flex; justify-content: flex-end;
+  font-size: 0.72rem; color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+.kbHint kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 3px; padding: 0 5px; font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 22px; height: 18px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+  .area { padding: 0.75rem; }
+  .card { padding: 1.25rem 1rem; border-radius: var(--r-lg); }
+  .kbHint { display: none; }
+}

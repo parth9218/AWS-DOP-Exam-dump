@@ -1,0 +1,81 @@
+.wrapper {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+}
+.strip {
+  display: flex; gap: 0.4rem; align-items: center;
+  padding: 0.6rem 1.5rem;
+  overflow-x: auto; min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hover) transparent;
+}
+.strip::-webkit-scrollbar { height: 3px; }
+.strip::-webkit-scrollbar-track { background: transparent; }
+.strip::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: var(--r-full); }
+
+.pill {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.7rem; font-weight: 700;
+  cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--t-base);
+  font-family: inherit;
+}
+.pill:hover { border-color: var(--border-hover); color: var(--text-primary); transform: translateY(-1px); }
+
+.answered {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+.review {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning);
+}
+.answeredReview {
+  background: var(--purple-bg);
+  border-color: var(--purple-border);
+  color: var(--purple);
+}
+
+/* Current — overrides state colour for the ring, keeps colour beneath */
+.current {
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.40);
+  transform: scale(1.14);
+  border-color: var(--info);
+  color: var(--info);
+  background: var(--info-bg);
+}
+.current.answered {
+  background: var(--success-bg); border-color: var(--success); color: var(--success);
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.40);
+}
+.current.review {
+  background: var(--warning-bg); border-color: var(--warning); color: var(--warning);
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.40);
+}
+.current.answeredReview {
+  background: var(--purple-bg); border-color: var(--purple); color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.40);
+}
+
+/* Legend */
+.legend {
+  display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+  padding: 0.35rem 1.5rem 0.5rem;
+  font-size: 0.73rem; color: var(--text-muted);
+}
+.legendItem { display: flex; align-items: center; gap: 0.4rem; }
+.dot {
+  width: 10px; height: 10px; border-radius: 50%; border: 2px solid;
+}
+.dotAnswered { border-color: var(--success-border); background: var(--success-bg); }
+.dotReview   { border-color: var(--warning-border); background: var(--warning-bg); }
+.dotBoth     { border-color: var(--purple-border);  background: var(--purple-bg); }
+.dotCurrent  { border-color: var(--info);           background: var(--info-bg); box-shadow: 0 0 0 2px rgba(79,142,247,0.3); }
