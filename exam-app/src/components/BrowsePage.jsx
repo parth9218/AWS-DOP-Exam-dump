@@ -19,7 +19,7 @@ export default function BrowsePage({ onStartExam }) {
   const lastRef = useRef(null);
 
   useEffect(() => {
-    fetch('/questions-full.json')
+    fetch(`${import.meta.env.BASE_URL}questions-full.json`)
       .then(r => r.json())
       .then(data => {
         const valid = data.filter(q => q && q.title && q.body).map((q, i) => ({ ...q, id: String(i) }));

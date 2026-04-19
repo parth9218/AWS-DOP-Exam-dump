@@ -49,7 +49,7 @@ export default function App() {
 
   /* ── Load exam questions (75-question subset) ── */
   useEffect(() => {
-    fetch('./questions.json')
+    fetch(`${import.meta.env.BASE_URL}questions.json`)
       .then(r => r.json())
       .then(data => {
         const valid = data.filter(q => q && q.title && q.body);
@@ -61,7 +61,7 @@ export default function App() {
 
   /* ── Load full bank count for home page ── */
   useEffect(() => {
-    fetch('./questions-full.json')
+    fetch(`${import.meta.env.BASE_URL}questions-full.json`)
       .then(r => r.json())
       .then(data => setFullCount(data.filter(q => q?.title && q?.body).length))
       .catch(() => {});
