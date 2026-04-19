@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 import LoadingScreen     from './components/LoadingScreen';
 import HomePage          from './components/HomePage';
@@ -17,15 +18,9 @@ import { useTheme }      from './hooks/useTheme';
 
 import styles from './App.module.css';
 
-/* ── Views ── */
-const VIEW_HOME  = 'home';
-const VIEW_BROWSE = 'browse';
-const VIEW_EXAM  = 'exam';
-
 export default function App() {
-  /* ── View / routing ── */
-  const [view, setView]           = useState(VIEW_HOME);
-  const [prevView, setPrevView]   = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   /* ── Exam questions ── */
   const [questions, setQuestions] = useState([]);
@@ -94,7 +89,7 @@ export default function App() {
 
   /* ── Keyboard shortcuts (exam mode only) ── */
   useEffect(() => {
-    if (view !== VIEW_EXAM) return;
+    if (!location.pathname.includes('/exam')) return;
     function onKey(e) {
       if (showSummary || showConfirm) return;
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
@@ -105,7 +100,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [view, showSummary, showConfirm, goNext, goPrev, exam]);
+  }, [location.pathname, showSummary, showConfirm, goNext, goPrev, exam]);
 
   const answeredCount = Object.keys(exam.answers).filter(k => exam.answers[k]?.length > 0).length;
 
@@ -113,31 +108,26 @@ export default function App() {
     exam.selectAnswer(exam.currentIdx, key, checked, maxSelect, isSingle);
   }, [exam]);
 
-  const navigateTo = (nextView) => {
-    setPrevView(view);
-    setView(nextView);
-  };
-
   /* ── Global back nav bar (shown in browse/exam to return home) ── */
   const GlobalNav = ({ currentView }) => (
     <nav className={styles.globalNav}>
       <button
         className={styles.navHome}
-        onClick={() => navigateTo(VIEW_HOME)}
+        onClick={() => navigate('/')}
         title="Back to hub"
       >
         ☁️ <span>AWS DOP-C02</span>
       </button>
       <div className={styles.navTabs}>
         <button
-          className={`${styles.navTab} ${currentView === VIEW_BROWSE ? styles.navTabActive : ''}`}
-          onClick={() => navigateTo(VIEW_BROWSE)}
+          className={`${styles.navTab} ${currentView === 'browse' ? styles.navTabActive : ''}`}
+          onClick={() => navigate('/browse')}
         >
           📚 Browse
         </button>
         <button
-          className={`${styles.navTab} ${currentView === VIEW_EXAM ? styles.navTabActive : ''}`}
-          onClick={() => navigateTo(VIEW_EXAM)}
+          className={`${styles.navTab} ${currentView === 'exam' ? styles.navTabActive : ''}`}
+          onClick={() => navigate('/exam')}
         >
           🎓 Exam
         </button>
@@ -151,58 +141,47 @@ export default function App() {
   /* ── Initial loading ── */
   if (loading) return <LoadingScreen />;
 
-  /* ── Home ── */
-  if (view === VIEW_HOME) {
-    return (
-      <div className={styles.shell}>
-        <div className={styles.homeThemeBtn}>
-          <button className={styles.themeBtn} onClick={cycleTheme} title={themeTitle}>{themeIcon}</button>
-        </div>
-        <AnimatePresence mode="wait">
-          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ flex: 1 }}>
-            <HomePage
-              questionCount={fullCount}
-              onBrowse={() => navigateTo(VIEW_BROWSE)}
-              onExam={() => navigateTo(VIEW_EXAM)}
-            />
-          </motion.div>
-        </AnimatePresence>
+  /* ── Routing Elements ── */
+  const homeElement = (
+    <div className={styles.shell}>
+      <div className={styles.homeThemeBtn}>
+        <button className={styles.themeBtn} onClick={cycleTheme} title={themeTitle}>{themeIcon}</button>
       </div>
-    );
-  }
+      <AnimatePresence mode="wait">
+        <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ flex: 1 }}>
+          <HomePage
+            questionCount={fullCount}
+            onBrowse={() => navigate('/browse')}
+            onExam={() => navigate('/exam')}
+          />
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 
-  /* ── Browse ── */
-  if (view === VIEW_BROWSE) {
-    return (
-      <div className={styles.shell}>
-        <GlobalNav currentView={VIEW_BROWSE} />
-        <AnimatePresence mode="wait">
-          <motion.div key="browse" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ flex: 1 }}>
-            <BrowsePage />
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  /* ── Exam ── */
-  if (loadError) {
-    return (
-      <div className={styles.shell}>
-        <GlobalNav currentView={VIEW_EXAM} />
-        <div className={styles.errorScreen}>
-          <p>⚠️ {loadError}</p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-            Run <code>node scripts/generate-test.js</code> to generate the exam question set.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const browseElement = (
+    <div className={styles.shell}>
+      <GlobalNav currentView="browse" />
+      <AnimatePresence mode="wait">
+        <motion.div key="browse" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ flex: 1 }}>
+          <BrowsePage />
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 
   const q = questions[exam.currentIdx];
-
-  return (
+  const examElement = loadError ? (
+    <div className={styles.shell}>
+      <GlobalNav currentView="exam" />
+      <div className={styles.errorScreen}>
+        <p>⚠️ {loadError}</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+          Run <code>node scripts/generate-test.js</code> to generate the exam question set.
+        </p>
+      </div>
+    </div>
+  ) : (
     <div className={styles.shell}>
       <ExamHeader
         currentIdx={exam.currentIdx}
@@ -217,7 +196,7 @@ export default function App() {
         onNewExam={requestNewExam}
         onSummary={() => setShowSummary(true)}
         answeredCount={answeredCount}
-        onHome={() => navigateTo(VIEW_HOME)}
+        onHome={() => navigate('/')}
       />
 
       <QuestionNavigator
@@ -269,5 +248,14 @@ export default function App() {
         )}
       </AnimatePresence>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={homeElement} />
+      <Route path="/browse" element={browseElement} />
+      <Route path="/exam" element={examElement} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
