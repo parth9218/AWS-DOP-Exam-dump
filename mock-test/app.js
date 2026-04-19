@@ -462,12 +462,37 @@
     /* ════════════════════════════════════
        SUMMARY
     ════════════════════════════════════ */
+    /** Current filter: 'all' | 'correct' | 'wrong' | 'skipped' | 'flagged' */
+    let summaryFilter = 'all';
+
     function openSummary() {
+        summaryFilter = 'all';
         buildSummary();
         summaryOverlay.classList.remove('hidden');
     }
     function closeSummary() {
         summaryOverlay.classList.add('hidden');
+    }
+
+    function filterSummary(filter) {
+        /* Toggle off if clicking the already-active chip */
+        summaryFilter = (summaryFilter === filter) ? 'all' : filter;
+
+        /* Update chip active states */
+        summaryScoreRow.querySelectorAll('.score-chip').forEach(chip => {
+            chip.classList.toggle('chip-active', chip.dataset.filter === summaryFilter);
+        });
+
+        /* Show / hide items */
+        summaryList.querySelectorAll('.summary-item').forEach(item => {
+            if (summaryFilter === 'all') {
+                item.style.display = '';
+            } else {
+                const match = item.dataset.category === summaryFilter ||
+                              (summaryFilter === 'flagged' && item.dataset.flagged === 'true');
+                item.style.display = match ? '' : 'none';
+            }
+        });
     }
 
     function buildSummary() {
@@ -491,6 +516,7 @@
 
             const icon = !isAnswered ? '⬜' : isCorrect ? '✅' : '❌';
             const cls  = !isAnswered ? 'si-skipped' : isCorrect ? 'si-correct' : 'si-wrong';
+            const category = !isAnswered ? 'skipped' : isCorrect ? 'correct' : 'wrong';
 
             const flagHtml = isFlagged ? '&nbsp;&nbsp;🚩' : '';
 
@@ -507,6 +533,8 @@
 
             const item = document.createElement('div');
             item.className = 'summary-item ' + cls;
+            item.dataset.category = category;
+            item.dataset.flagged  = isFlagged ? 'true' : 'false';
             item.innerHTML =
                 '<span class="si-icon">' + icon + '</span>' +
                 '<div class="si-body">' +
@@ -526,27 +554,33 @@
         const pct   = total > 0 ? Math.round((correct / total) * 100) : 0;
 
         summaryScoreRow.innerHTML = `
-            <div class="score-chip chip-score">
+            <div class="score-chip chip-score" data-filter="all" title="Show all questions">
                 <div class="chip-num">${pct}%</div>
                 <div class="chip-lbl">Score</div>
             </div>
-            <div class="score-chip chip-correct">
+            <div class="score-chip chip-correct" data-filter="correct" title="Show correct answers">
                 <div class="chip-num">${correct}</div>
                 <div class="chip-lbl">Correct</div>
             </div>
-            <div class="score-chip chip-wrong">
+            <div class="score-chip chip-wrong" data-filter="wrong" title="Show incorrect answers">
                 <div class="chip-num">${wrong}</div>
                 <div class="chip-lbl">Incorrect</div>
             </div>
-            <div class="score-chip chip-unanswered">
+            <div class="score-chip chip-unanswered" data-filter="skipped" title="Show unanswered questions">
                 <div class="chip-num">${skipped}</div>
                 <div class="chip-lbl">Unanswered</div>
             </div>
-            <div class="score-chip chip-review">
+            <div class="score-chip chip-review" data-filter="flagged" title="Show flagged questions">
                 <div class="chip-num">${reviewCount}</div>
                 <div class="chip-lbl">Flagged</div>
             </div>
         `;
+
+        /* Wire up chip click handlers */
+        summaryScoreRow.querySelectorAll('.score-chip').forEach(chip => {
+            chip.style.cursor = 'pointer';
+            chip.addEventListener('click', () => filterSummary(chip.dataset.filter));
+        });
     }
 
     function truncate(str, len) {
