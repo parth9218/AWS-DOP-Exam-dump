@@ -40,9 +40,24 @@
 }
 
 .selectHint {
-  margin-left: auto;
   font-size: 0.75rem; color: var(--text-muted);
   letter-spacing: 0.3px;
+}
+
+.copyIconBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 4px 10px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.copyIconBtn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--aws);
+  color: var(--aws);
 }
 
 .body {

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import OptionItem from './OptionItem';
+import CopyButton from './CopyButton';
 import styles from './QuestionCard.module.css';
 import { parseQuestion, questionType, allowedCount, renderMarkdown } from '../utils/parseQuestion';
 
@@ -54,11 +55,20 @@ export default function QuestionCard({
             >
               {label.text}
             </span>
-            {!isSingle && (
-              <span className={styles.selectHint}>
-                {answerCount}/{maxSelect} selected
-              </span>
-            )}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {!isSingle && (
+                <span className={styles.selectHint}>
+                  {answerCount}/{maxSelect} selected
+                </span>
+              )}
+              <CopyButton 
+                question={question}
+                className={styles.copyIconBtn}
+                copiedChildren="✅ Copied"
+              >
+                📋 Copy
+              </CopyButton>
+            </div>
           </div>
 
           {/* Question body */}

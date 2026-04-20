@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './BrowsePage.module.css';
 import { renderMarkdown } from '../utils/parseQuestion';
+import CopyButton from './CopyButton';
 
 const ATTEMPTED_KEY = 'examPrepAttempted';
 const LAST_KEY      = 'examPrepLastQuestion';
@@ -163,6 +164,7 @@ export default function BrowsePage({ onStartExam }) {
                 >
                   {isRevealed ? 'Hide Answer' : 'Show Answer'}
                 </button>
+                <CopyButton question={q} className={`${styles.btn} ${styles.btnGhost}`} />
                 {q.link && (
                   <a href={q.link} target="_blank" rel="noopener noreferrer" className={`${styles.btn} ${styles.btnGhost}`}>
                     Discussion →
