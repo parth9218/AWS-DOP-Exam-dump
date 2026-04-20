@@ -10,9 +10,11 @@ function getEffective() {
 
 export function useTheme() {
   const [saved, setSaved] = useState(() => localStorage.getItem(KEY)); // null | 'dark' | 'light'
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
   const effective = saved === 'dark' || saved === 'light'
     ? saved
-    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    : (systemDark ? 'dark' : 'light');
 
   /* Apply to <html> on change */
   useEffect(() => {
@@ -22,7 +24,7 @@ export function useTheme() {
   /* Listen for OS preference change */
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => { if (!localStorage.getItem(KEY)) setSaved(null); };
+    const handler = (e) => setSystemDark(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
@@ -41,8 +43,12 @@ export function useTheme() {
   }, []);
 
   /* Icon & label */
-  const icon  = saved === 'dark' ? '☀️' : saved === 'light' ? '🖥' : '🌙';
-  const title = saved === 'dark' ? 'Switch to light' : saved === 'light' ? 'Switch to system' : 'Switch to dark';
+  const icon  = saved === 'dark' ? '🌙' : saved === 'light' ? '☀️' : '🖥';
+  const title = saved === 'dark' 
+    ? 'Dark mode (click for light)' 
+    : saved === 'light' 
+      ? 'Light mode (click for system)' 
+      : 'System mode (click for dark)';
 
   return { theme: effective, saved, cycle, icon, title };
 }
