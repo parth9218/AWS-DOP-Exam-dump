@@ -112,7 +112,10 @@ export function useExamState(questions) {
   }, []);
 
   const clearExam = useCallback(() => {
-    [KEY_ANSWERS, KEY_FLAGS, KEY_CURRENT, KEY_START_TS].forEach(k => localStorage.removeItem(k));
+    [
+      KEY_ANSWERS, KEY_FLAGS, KEY_CURRENT, KEY_START_TS,
+      'mockExam_accumulatedTime', 'mockExam_isPaused', 'mockExam_lastStart'
+    ].forEach(k => localStorage.removeItem(k));
     setAnswers({});
     setFlagged(new Set());
     setCurrentIdx(0);

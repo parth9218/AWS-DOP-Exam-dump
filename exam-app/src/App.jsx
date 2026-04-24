@@ -11,6 +11,7 @@ import QuestionCard      from './components/QuestionCard';
 import ExamFooter        from './components/ExamFooter';
 import SummaryModal      from './components/SummaryModal';
 import ConfirmModal      from './components/ConfirmModal';
+import PauseModal        from './components/PauseModal';
 
 import { useExamState }  from './hooks/useExamState';
 import { useTimer }      from './hooks/useTimer';
@@ -39,8 +40,25 @@ export default function App() {
   const [direction, setDirection] = useState(1);
 
   const { theme, cycle: cycleTheme, icon: themeIcon, title: themeTitle } = useTheme();
-  const { elapsed } = useTimer();
+  const { elapsed, display, isPaused, pause, resume } = useTimer();
   const exam = useExamState(questions);
+
+  /* ── Stats for Pause Modal ── */
+  const totalCount = questions.length;
+  const answeredCount = Object.keys(exam.answers).filter(k => exam.answers[k]?.length > 0).length;
+  const unansweredCount = totalCount - answeredCount;
+  const reviewCount = exam.flagged.size;
+  
+  // 3h for AWS DOP-C02 
+  // Extra 30 Min for ESL
+  const TOTAL_TIME_SECS = 210 * 60;
+  const remainingSecs = Math.max(0, TOTAL_TIME_SECS - elapsed);
+  const formatRemaining = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  };
 
   /* ── Load exam questions (75-question subset) ── */
   useEffect(() => {
@@ -91,22 +109,16 @@ export default function App() {
   useEffect(() => {
     if (!location.pathname.includes('/exam')) return;
     function onKey(e) {
-      if (showSummary || showConfirm) return;
+      if (showSummary || showConfirm || isPaused) return;
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goNext();
       else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goPrev();
       else if (e.key === 'f' || e.key === 'F') exam.toggleFlag(exam.currentIdx);
-      else if (e.key === 'Escape') { setShowSummary(false); setShowConfirm(false); }
+      else if (e.key === 'Escape') { setShowSummary(false); setShowConfirm(false); resume(); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [location.pathname, showSummary, showConfirm, goNext, goPrev, exam]);
-
-  const answeredCount = Object.keys(exam.answers).filter(k => exam.answers[k]?.length > 0).length;
-
-  const onSelect = useCallback((key, checked, maxSelect, isSingle) => {
-    exam.selectAnswer(exam.currentIdx, key, checked, maxSelect, isSingle);
-  }, [exam]);
+  }, [location.pathname, showSummary, showConfirm, isPaused, goNext, goPrev, exam, resume]);
 
   /* ── Global back nav bar (shown in browse/exam to return home) ── */
   const GlobalNav = ({ currentView }) => (
@@ -194,6 +206,7 @@ export default function App() {
         themeIcon={themeIcon}
         themeTitle={themeTitle}
         onNewExam={requestNewExam}
+        onPause={pause}
         onSummary={() => setShowSummary(true)}
         answeredCount={answeredCount}
         onHome={() => navigate('/')}
@@ -215,7 +228,9 @@ export default function App() {
           totalCount={questions.length}
           userSel={exam.answers[exam.currentIdx] || []}
           direction={direction}
-          onSelect={onSelect}
+          onSelect={(key, checked, maxSelect, isSingle) => {
+            if (!isPaused) exam.selectAnswer(exam.currentIdx, key, checked, maxSelect, isSingle);
+          }}
         />
       )}
 
@@ -225,7 +240,7 @@ export default function App() {
         flagged={exam.flagged}
         onPrev={goPrev}
         onNext={goNext}
-        onFlag={() => exam.toggleFlag(exam.currentIdx)}
+        onFlag={() => !isPaused && exam.toggleFlag(exam.currentIdx)}
         onSummary={() => setShowSummary(true)}
       />
 
@@ -239,6 +254,19 @@ export default function App() {
             onClose={() => setShowSummary(false)}
             onNewExam={requestNewExam}
             onGoTo={goTo}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isPaused && (
+          <PauseModal
+            key="pause"
+            totalCount={totalCount}
+            answeredCount={answeredCount}
+            unansweredCount={unansweredCount}
+            reviewCount={reviewCount}
+            remainingTime={formatRemaining(remainingSecs)}
+            onResume={resume}
           />
         )}
       </AnimatePresence>

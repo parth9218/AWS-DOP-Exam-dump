@@ -3,7 +3,7 @@ import styles from './ExamHeader.module.css';
 export default function ExamHeader({
   currentIdx, totalCount, elapsed, clockVisible, onToggleClock,
   theme, onCycleTheme, themeIcon, themeTitle,
-  onNewExam, onSummary, onHome,
+  onNewExam, onSummary, onHome, onPause,
   answeredCount,
 }) {
   const pct = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
@@ -70,6 +70,13 @@ export default function ExamHeader({
           title="Clear progress and start fresh"
         >
           <span>🗑</span> New Exam
+        </button>
+        <button
+          className={`${styles.btn} ${styles.btnGhost}`}
+          onClick={onPause}
+          id="btn-pause-exam"
+        >
+          <span>⏸</span> Pause
         </button>
         <button
           className={`${styles.btn} ${styles.btnPrimary}`}
