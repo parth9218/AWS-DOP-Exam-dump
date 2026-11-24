@@ -31,6 +31,16 @@ export default function App() {
   /* ── Full bank question count (for home page display) ── */
   const [fullCount, setFullCount]   = useState(0);
 
+  /* ── Stats for Browse Page ── */
+  const [browseStats, setBrowseStats] = useState(() => {
+    try {
+      const att = new Set(JSON.parse(localStorage.getItem('examPrepAttempted') || '[]'));
+      return { attempted: att.size, total: 0, isFiltered: false };
+    } catch {
+      return null;
+    }
+  });
+
   /* ── Exam modals & state ── */
   const [showSummary,  setShowSummary]  = useState(false);
   const [showConfirm,  setShowConfirm]  = useState(false);
@@ -76,7 +86,11 @@ export default function App() {
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}questions-full.json`)
       .then(r => r.json())
-      .then(data => setFullCount(data.filter(q => q?.title && q?.body).length))
+      .then(data => {
+        const count = data.filter(q => q?.title && q?.body).length;
+        setFullCount(count);
+        setBrowseStats(prev => prev ? { ...prev, total: prev.total || count } : prev);
+      })
       .catch(() => {});
   }, []);
 
@@ -121,7 +135,7 @@ export default function App() {
   }, [location.pathname, showSummary, showConfirm, isPaused, goNext, goPrev, exam, resume]);
 
   /* ── Global back nav bar (shown in browse/exam to return home) ── */
-  const GlobalNav = ({ currentView }) => (
+  const GlobalNav = ({ currentView, stats }) => (
     <nav className={styles.globalNav}>
       <button
         className={styles.navHome}
@@ -144,9 +158,23 @@ export default function App() {
           🎓 Exam
         </button>
       </div>
-      <button className={styles.themeBtn} onClick={cycleTheme} title={themeTitle}>
-        {themeIcon}
-      </button>
+      <div className={styles.navRight}>
+        {/* {stats && (
+          <div className={styles.navStats}>
+            <span className={styles.statChip}>
+              <span className={styles.statNum}>{stats.attempted}</span>
+              <span className={styles.statLbl}>Attempted</span>
+            </span>
+            <span className={styles.statChip}>
+              <span className={styles.statNum}>{stats.total}</span>
+              <span className={styles.statLbl}>{stats.isFiltered ? 'Results' : 'Total'}</span>
+            </span>
+          </div>
+        )} */}
+        <button className={styles.themeBtn} onClick={cycleTheme} title={themeTitle}>
+          {themeIcon}
+        </button>
+      </div>
     </nav>
   );
 
@@ -173,10 +201,10 @@ export default function App() {
 
   const browseElement = (
     <div className={styles.shell}>
-      <GlobalNav currentView="browse" />
+      <GlobalNav currentView="browse" stats={browseStats} />
       <AnimatePresence mode="wait">
         <motion.div key="browse" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ flex: 1 }}>
-          <BrowsePage />
+          <BrowsePage onStatsChange={setBrowseStats} />
         </motion.div>
       </AnimatePresence>
     </div>
