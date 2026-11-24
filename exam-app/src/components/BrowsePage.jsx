@@ -7,6 +7,14 @@ import CopyButton from './CopyButton';
 const ATTEMPTED_KEY = 'examPrepAttempted';
 const LAST_KEY      = 'examPrepLastQuestion';
 
+function formatTimestamp(ts) {
+  if (!ts) return '';
+  const m = ts.match(/^([A-Za-z]+\.?\s+\d{1,2},\s+\d{4})/);
+  if (m) return m[1];
+  if (/^\d{4}-\d{2}-\d{2}/.test(ts)) return ts.split(' ')[0];
+  return ts.split(',')[0] || ts.split(' ')[0];
+}
+
 export default function BrowsePage({ onStartExam }) {
   const [questions, setQuestions]   = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -17,7 +25,16 @@ export default function BrowsePage({ onStartExam }) {
     catch { return new Set(); }
   });
   const [revealed, setRevealed]     = useState(new Set());
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const lastRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}questions-full.json`)
@@ -48,6 +65,9 @@ export default function BrowsePage({ onStartExam }) {
       )
     : questions;
 
+  const totalBankCount = questions.length || 1;
+  const pct = Math.round((attempted.size / totalBankCount) * 100);
+
   const toggleReveal = useCallback((id) => {
     localStorage.setItem(LAST_KEY, id);
     setRevealed(prev => {
@@ -74,7 +94,42 @@ export default function BrowsePage({ onStartExam }) {
 
   return (
     <div className={styles.page}>
-      {/* Sticky toolbar */}
+      {/* Floating HUD in the empty right margin */}
+      <aside className={styles.floatingHud} aria-label="Progress Overview">
+        <div className={styles.hudCard}>
+          <div className={styles.hudHeader}>
+            <span className={styles.hudIcon}>📊</span>
+            <span className={styles.hudTitle}>Progress</span>
+            <span className={styles.hudPctBadge}>{pct}%</span>
+          </div>
+
+          <div className={styles.hudMainStat}>
+            <div className={styles.hudNumWrap}>
+              <span className={styles.hudBigNum}>{attempted.size}</span>
+              <span className={styles.hudTotal}>/ {query ? filtered.length : questions.length}</span>
+            </div>
+            <span className={styles.hudSublabel}>
+              {query ? 'Attempted in results' : 'Questions Attempted'}
+            </span>
+          </div>
+
+          <div className={styles.hudProgressBar}>
+            <div
+              className={styles.hudProgressFill}
+              style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+            />
+          </div>
+
+          <div className={styles.hudLeftStat}>
+            <span className={styles.hudLeftLbl}>Left</span>
+            <span className={styles.hudLeftVal}>
+              {Math.max(0, (query ? filtered.length : questions.length) - attempted.size)}
+            </span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Search toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.searchWrap}>
           <span className={styles.searchIcon}>🔍</span>
@@ -89,17 +144,6 @@ export default function BrowsePage({ onStartExam }) {
           {query && (
             <button className={styles.clearSearch} onClick={() => setQuery('')}>✕</button>
           )}
-        </div>
-
-        <div className={styles.stats}>
-          <span className={styles.statChip}>
-            <span className={styles.statNum}>{attempted.size}</span>
-            <span className={styles.statLbl}>Attempted</span>
-          </span>
-          <span className={styles.statChip}>
-            <span className={styles.statNum}>{filtered.length}</span>
-            <span className={styles.statLbl}>{query ? 'Results' : 'Total'}</span>
-          </span>
         </div>
       </div>
 
@@ -132,7 +176,7 @@ export default function BrowsePage({ onStartExam }) {
                 <div className={styles.cardMeta}>
                   <span className={styles.metaTag}>#{parseInt(q.id) + 1}</span>
                   {q.timestamp && (
-                    <span className={styles.metaTag}>🕘 {q.timestamp.split(' ')[0]}</span>
+                    <span className={styles.metaTag}>🕘 {formatTimestamp(q.timestamp)}</span>
                   )}
                 </div>
               </div>
@@ -175,6 +219,18 @@ export default function BrowsePage({ onStartExam }) {
           );
         })}
       </div>
+
+      {/* Fixed bottom-right scroll to top button */}
+      {showScrollTop && (
+        <button
+          className={styles.fixedScrollTop}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          title="Scroll to top"
+          aria-label="Scroll to top"
+        >
+          ↑
+        </button>
+      )}
     </div>
   );
 }

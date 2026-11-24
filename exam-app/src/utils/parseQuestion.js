@@ -2,19 +2,28 @@
 
 /**
  * Splits a question's raw body into { body, options }
- * Options are lines starting with **A:** / **B:** etc.
+ * Supports options formatted as **A:**, **A.**, A., A), or A:
  */
 export function parseQuestion(q) {
-  const raw = q.body || '';
-  const optionRegex = /\*\*([A-Z]):\*\*/g;
+  let raw = q.body || '';
+
+  // Defensively strip ExamTopics scrape header banner
+  raw = raw.replace(/^Exam question from\s+Amazon's[\s\S]*?\[All [^\]]+\]\s*/i, '').trim();
+
+  // Defensively strip Suggested Answer line if still present
+  raw = raw.replace(/\n?\s*Suggested Answer:\s*[A-Z]+\s*🗳️?\s*/gi, '\n\n');
+
+  // Option regex matching **A:**, **A.**, or A., A), A: at line starts
+  const optionRegex = /(?:^|\n)\s*(?:\*\*([A-Z])[\.:\)]?\*\*|([A-Z])[\.:\)])\s*/g;
   let match;
   const positions = [];
 
   while ((match = optionRegex.exec(raw)) !== null) {
-    positions.push({ key: match[1], start: match.index, contentStart: match.index + match[0].length });
+    const key = match[1] || match[2];
+    positions.push({ key, start: match.index, contentStart: match.index + match[0].length });
   }
 
-  if (positions.length === 0) return { body: raw, options: [] };
+  if (positions.length === 0) return { body: raw.trim(), options: [] };
 
   const body = raw.slice(0, positions[0].start).trim();
   const options = positions.map((pos, i) => {
@@ -46,12 +55,26 @@ export function correctKeys(q) {
 /** Render minimal markdown: **bold**, newlines → <br> */
 export function renderMarkdown(text) {
   if (!text) return '';
+
   let out = text
+    // Defensively strip banner and suggested answers
+    .replace(/^Exam question from\s+Amazon's[\s\S]*?\[All [^\]]+\]\s*/i, '')
+    .replace(/\n?\s*Suggested Answer:\s*[A-Z]+\s*🗳️?\s*/gi, '\n\n')
+    .trim();
+
+  out = out
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+
+  // Make line-starting options bold if not already bold (e.g. A. text -> **A:** text)
+  out = out.replace(/(?:^|\n)\s*([A-H])\.\s+/g, '\n\n**$1:** ');
+
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/\n{3,}/g, '\n\n');
   out = out.replace(/\n/g, '<br>');
+  out = out.replace(/^(?:<br\s*\/?>)+/, '');
+
   return out;
 }
 
